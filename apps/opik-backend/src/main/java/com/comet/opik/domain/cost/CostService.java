@@ -42,7 +42,8 @@ public class CostService {
     }
 
     private static final ModelPrice DEFAULT_COST = new ModelPrice(new BigDecimal("0"),
-            new BigDecimal("0"), new BigDecimal("0"), new BigDecimal("0"), new BigDecimal("0"), SpanCostCalculator::defaultCost);
+            new BigDecimal("0"), new BigDecimal("0"), new BigDecimal("0"), new BigDecimal("0"),
+            SpanCostCalculator::defaultCost);
 
     public static BigDecimal calculateCost(@Nullable String modelName, @Nullable String provider,
             @Nullable Map<String, Integer> usage, @Nullable JsonNode metadata) {
@@ -99,13 +100,15 @@ public class CostService {
                 if (inputCharacterPrice.compareTo(BigDecimal.ZERO) > 0) {
                     // Use character-based billing for TTS models
                     calculator = SpanCostCalculator::characterBasedCost;
-                } else if (cacheCreationInputTokenPrice.compareTo(BigDecimal.ZERO) > 0
-                        || cacheReadInputTokenPrice.compareTo(BigDecimal.ZERO) > 0) {
-                    calculator = PROVIDERS_CACHE_COST_CALCULATOR.getOrDefault(provider,
-                            SpanCostCalculator::textGenerationCost);
-                } else if (inputPrice.compareTo(BigDecimal.ZERO) > 0 || outputPrice.compareTo(BigDecimal.ZERO) > 0) {
-                    calculator = SpanCostCalculator::textGenerationCost;
-                }
+                } else
+                    if (cacheCreationInputTokenPrice.compareTo(BigDecimal.ZERO) > 0
+                            || cacheReadInputTokenPrice.compareTo(BigDecimal.ZERO) > 0) {
+                                calculator = PROVIDERS_CACHE_COST_CALCULATOR.getOrDefault(provider,
+                                        SpanCostCalculator::textGenerationCost);
+                            } else
+                        if (inputPrice.compareTo(BigDecimal.ZERO) > 0 || outputPrice.compareTo(BigDecimal.ZERO) > 0) {
+                            calculator = SpanCostCalculator::textGenerationCost;
+                        }
 
                 parsedModelPrices.put(
                         createModelProviderKey(parseModelName(modelName), PROVIDERS_MAPPING.get(provider)),
